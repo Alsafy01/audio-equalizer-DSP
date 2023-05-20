@@ -1,15 +1,15 @@
 function varargout = tes(varargin)
-% TES MATLAB code for tes.fig
-%      TES, by itself, creates a new TES or raises the existing
+% tes MATLAB code for tes.fig
+%      tes, by itself, creates a new tes or raises the existing
 %      singleton*.
 %
-%      H = TES returns the handle to a new TES or the handle to
+%      H = tes returns the handle to a new tes or the handle to
 %      the existing singleton*.
 %
-%      TES('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in TES.M with the given input arguments.
+%      tes('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in tes.M with the given input arguments.
 %
-%      TES('Property','Value',...) creates a new TES or raises the
+%      tes('Property','Value',...) creates a new tes or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
 %      applied to the GUI before tes_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
@@ -22,7 +22,7 @@ function varargout = tes(varargin)
 
 % Edit the above text to modify the response to help tes
 
-% Last Modified by GUIDE v2.5 19-May-2023 02:28:47
+% Last Modified by GUIDE v2.5 20-May-2023 14:51:36
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -190,9 +190,11 @@ function browse_Callback(hObject, eventdata, handles)
 % hObject    handle to browse (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-[filename pathname]=uigetfile({'*.wav'}, 'File Selector'); %enables a user to select or enter the name of a file.
+[filename, pathname]=uigetfile({'*.wav'}, 'File Selector'); %enables a user to select or enter the name of a file.
 handles.fullpathname = strcat(pathname, filename);   %concatenates the text in its input arguments
 set(handles.address, 'String', handles.fullpathname)  %showing fullpathname
+[y Fs] = audioread(filename);
+set(handles.edit16, 'String', Fs)
 guidata(hObject, handles)                             %save your handles struct to the guidata 
 % --- Executes on button press in play.
 function play_Callback(hObject, eventdata, handles)
@@ -224,14 +226,6 @@ function resume_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 global player;
 resume(player);
-guidata(hObject, handles)
-% --- Executes on button press in stop.
-function stop_Callback(hObject, eventdata, handles)
-% hObject    handle to stop (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-global player;
-stop(player);
 guidata(hObject, handles)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% T E X T  B O X %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -266,13 +260,9 @@ function FIR(hObject, handles)
 global player;
 global y1 y2 y3 y4 y5 y6 y7 y8 y9 y10;
 [handles.y,handles.Fs] = audioread(handles.fullpathname); %) reads data from the file, and returns sampled data, y, and a sample rate for that data, Fs.
-fso=str2double(char(get(handles.edit16, 'String'))); %taking the o/p freq from user
-if ~isnan(fso)
-    handles.Fs = fso;
-end 
 handles.Y=abs(fftshift(fft(handles.y)));     %original signal in freq domain
-handles.Volume=get(handles.slider12,'value'); % taking the value of volume from user
-%handles.y=handles.y(NewStart:end,:); 
+ fso=str2double(char(get(handles.edit16, 'String'))); %taking the o/p freq from user
+handles.Volume=get(handles.slider12,'value'); % taking the value of volume from user 
 handles.g1=exp(get(handles.slider0,'value')/10); % taking the gain from slider and converting it from db
 handles.g2=exp(get(handles.slider1,'value')/10);
 handles.g3=exp(get(handles.slider2,'value')/10);
@@ -344,48 +334,54 @@ x7=abs(fftshift(fft(m7)));
 m8=filter(b7,1,handles.y);
 x8=abs(fftshift(fft(m8)));
  % %bandpass8
-  f15=14001; f16=16000;
+  f15=14001; f16=20000;
   b8=fir1(orde,[f15/fn f16/fn],'bandpass'); fvtool(b8)
   y9=handles.g9*filter(b8,1,handles.y);
 m9=filter(b8,1,handles.y);
 x9=abs(fftshift(fft(m9)));
  %16th-order highpass filter with fc=16khz
-  cut_off2=16000;
+  cut_off2=20000;
   c=fir1(orde,cut_off2/fn,'high'); fvtool(c)
   y10=handles.g10*filter(c,1,handles.y);  
 m10=filter(c,1,handles.y);       
 x10=abs(fftshift(fft(m10)));     
 
  handles.yT=y1+y2+y3+y4+y5+y6+y7+y8+y9+y10;  
- handles.YT=abs(fftshift(fft(handles.yT)));   
+ handles.YT=abs(fftshift(fft(handles.yT)));
+if ~isnan(fso)
+    handles.Fs = fso;
+end 
 player = audioplayer(handles.Volume*handles.yT, handles.Fs); %play the output signal
 % ploting the whole signal
  subplot(2,2,1); plot(handles.y,'r'); title('original signal in time')
  subplot(2,2,3); plot(handles.Y,'r'); title('original signal in frequency')
  subplot(2,2,2); plot(handles.yT,'g'); title('composite signal in time')
- subplot(2,2,4); plot(handles.YT,'g'); title('composite signal in frequency') 
+ subplot(2,2,4); plot(handles.YT,'g'); title('composite signal in frequency')
+ suptitle('FIR')
  figure      % plotting the output signal of each filter in time domain
- subplot(10,1,1); plot(m1) ; title('o/p of lpf');
- subplot(10,1,2); plot(m2) ; title('o/p of BPF1');
- subplot(10,1,3); plot(m3) ; title('o/p of BPF2');
- subplot(10,1,4); plot(m4) ; title('o/p of BPF3');
- subplot(10,1,5); plot(m5) ; title('o/p of BPF4'); 
- subplot(10,1,6); plot(m6) ; title('o/p of BPF5');
- subplot(10,1,7); plot(m7) ; title('o/p of BPF6');
- subplot(10,1,8); plot(m8) ; title('o/p of BPF7');
- subplot(10,1,9); plot(m9) ; title('o/p of BPF8');
- subplot(10,1,10);plot(m10); title('o/p of HPF');
+ subplot(10,1,1); plot(m1,'b') ; title('(0 - 170 Hz) lpf');
+ subplot(10,1,2); plot(m2,'b') ; title('(170 – 300 Hz) BPF1');
+ subplot(10,1,3); plot(m3,'b') ; title('(300 - 610 Hz) BPF2');
+ subplot(10,1,4); plot(m4,'b') ; title('(610 - 1005 Hz) BPF3');
+ subplot(10,1,5); plot(m5,'b') ; title('(1005 Hz – 3 KHz) BPF4'); 
+ subplot(10,1,6); plot(m6,'b') ; title('(3 - 6 KHz) BPF5');
+ subplot(10,1,7); plot(m7,'b') ; title('(6 - 12 KHz) BPF6');
+ subplot(10,1,8); plot(m8,'b') ; title('(12 - 14 KHz) BPF7');
+ subplot(10,1,9); plot(m9,'b') ; title('(14 - 20 KHz) BPF8');
+ subplot(10,1,10); plot(m10,'b') ; title('(> 20 KHz) HPF');
+ suptitle('FIR Time Domain')
  figure        % plotting the output signal of each filter in freq domain
- subplot(10,1,1); plot(x1) ; title('o/p of lpf');
- subplot(10,1,2); plot(x2) ; title('o/p of BPF1');
- subplot(10,1,3); plot(x3) ; title('o/p of BPF2');
- subplot(10,1,4); plot(x4) ; title('o/p of BPF3');
- subplot(10,1,5); plot(x5) ; title('o/p of BPF4'); 
- subplot(10,1,6); plot(x6) ; title('o/p of BPF5');
- subplot(10,1,7); plot(x7) ; title('o/p of BPF6');
- subplot(10,1,8); plot(x8) ; title('o/p of BPF7');
- subplot(10,1,9); plot(x9) ; title('o/p of BPF8');
- subplot(10,1,10);plot(x10); title('o/p of HBF');
+ subplot(10,1,1); plot(x1,'r') ; title('(0 - 170 Hz) lpf');
+ subplot(10,1,2); plot(x2,'r') ; title('(170 – 300 Hz) BPF1');
+ subplot(10,1,3); plot(x3,'r') ; title('(300 - 610 Hz) BPF2');
+ subplot(10,1,4); plot(x4,'r') ; title('(610 - 1005 Hz) BPF3');
+ subplot(10,1,5); plot(x5,'r') ; title('(1005 Hz – 3 KHz) BPF4'); 
+ subplot(10,1,6); plot(x6,'r') ; title('(3 - 6 KHz) BPF5');
+ subplot(10,1,7); plot(x7,'r') ; title('(6 - 12 KHz) BPF6');
+ subplot(10,1,8); plot(x8,'r') ; title('(12 - 14 KHz) BPF7');
+ subplot(10,1,9); plot(x9,'r') ; title('(14 - 20 KHz) BPF8');
+ subplot(10,1,10); plot(x10,'r') ; title('(> 20 KHz) HPF');
+ suptitle('FIR Frequency Domain')
  
 audiowrite('composite_fir.wav',handles.yT,handles.Fs); %save the composite output signal as  .wav file 
  guidata(hObject,handles)
@@ -396,9 +392,6 @@ global player;
 global y1 y2 y3 y4 y5 y6 y7 y8 y9 y10;
 [handles.y,handles.Fs] = audioread(handles.fullpathname); % reads data from the file, and returns sampled data, y, and a sample rate for that data, Fs.
 fso=str2double(char(get(handles.edit16, 'String'))); %taking the o/p freq from user
-if ~isnan(fso)
-    handles.Fs = fso;
-end
 handles.Y=abs(fftshift(fft(handles.y)));     %original signal in freq domain
 handles.Volume=get(handles.slider12,'value');  %get the colume value from the slider
 handles.g1=exp(get(handles.slider0,'value')/10); % taking the gain from slider and converting it from db
@@ -472,51 +465,56 @@ x7=abs(fftshift(fft(m7)));
 m8=filter(b8,a8,handles.y);
 x8=abs(fftshift(fft(m8))); 
 % %bandpass8
-  f15=14001; f16=16000;
+  f15=14001; f16=20000;
   [b9,a9]=butter(orde,[f15/fn f16/fn],'bandpass'); fvtool(b9,a9)
   y9=handles.g9*filter(b9,a9,handles.y);
 m9=filter(b9,a9,handles.y);
 x9=abs(fftshift(fft(m9))); 
  %highpass
-  cut_off2=16000;
+  cut_off2=20000;
   [b10,a10]=butter(orde,cut_off2/fn,'high');  fvtool(b10,a10)
   y10=handles.g10*filter(b10,a10,handles.y);
 m10=filter(b10,a10,handles.y);
 x10=abs(fftshift(fft(m10)));  
 
  handles.yT=y1+y2+y3+y4+y5+y6+y7+y8+y9+y10;  
- handles.YT=abs(fftshift(fft(handles.yT)));  
+ handles.YT=abs(fftshift(fft(handles.yT)));
+ if ~isnan(fso)
+    handles.Fs = fso;
+end
 player = audioplayer(handles.Volume*handles.yT, handles.Fs);  
 % ploting the whole signal
  subplot(2,2,1); plot(handles.y,'r'); title('original signal in time')
  subplot(2,2,3); plot(handles.Y,'r'); title('original signal in frequency')
  subplot(2,2,2); plot(handles.yT,'g'); title('composite signal in time')
- subplot(2,2,4); plot(handles.YT,'g'); title('composite signal in frequency') 
+ subplot(2,2,4); plot(handles.YT,'g'); title('composite signal in frequency')
+ suptitle('IIR')
  figure      % plotting the output signal of each filter in time domain
- subplot(10,1,1); plot(m1) ; title('o/p of lpf');
- subplot(10,1,2); plot(m2) ; title('o/p of BPF1');
- subplot(10,1,3); plot(m3) ; title('o/p of BPF2');
- subplot(10,1,4); plot(m4) ; title('o/p of BPF3');
- subplot(10,1,5); plot(m5) ; title('o/p of BPF4'); 
- subplot(10,1,6); plot(m6) ; title('o/p of BPF5');
- subplot(10,1,7); plot(m7) ; title('o/p of BPF6');
- subplot(10,1,8); plot(m8) ; title('o/p of BPF7');
- subplot(10,1,9); plot(m9) ; title('o/p of BPF8');
- subplot(10,1,10); plot(m10) ; title('o/p of HPF');
+ subplot(10,1,1); plot(m1,'b') ; title('(0 - 170 Hz) lpf');
+ subplot(10,1,2); plot(m2,'b') ; title('(170 – 300 Hz) BPF1');
+ subplot(10,1,3); plot(m3,'b') ; title('(300 - 610 Hz) BPF2');
+ subplot(10,1,4); plot(m4,'b') ; title('(610 - 1005 Hz) BPF3');
+ subplot(10,1,5); plot(m5,'b') ; title('(1005 Hz – 3 KHz) BPF4'); 
+ subplot(10,1,6); plot(m6,'b') ; title('(3 - 6 KHz) BPF5');
+ subplot(10,1,7); plot(m7,'b') ; title('(6 - 12 KHz) BPF6');
+ subplot(10,1,8); plot(m8,'b') ; title('(12 - 14 KHz) BPF7');
+ subplot(10,1,9); plot(m9,'b') ; title('(14 - 20 KHz) BPF8');
+ subplot(10,1,10); plot(m10,'b') ; title('(> 20 KHz) HPF');
+ suptitle('IIR Time Domain')
  figure        % plotting the output signal of each filter in freq domain
- subplot(10,1,1); plot(x1) ; title('o/p of lpf');
- subplot(10,1,2); plot(x2) ; title('o/p of BPF1');
- subplot(10,1,3); plot(x3) ; title('o/p of BPF2');
- subplot(10,1,4); plot(x4) ; title('o/p of BPF3');
- subplot(10,1,5); plot(x5) ; title('o/p of BPF4'); 
- subplot(10,1,6); plot(x6) ; title('o/p of BPF5');
- subplot(10,1,7); plot(x7) ; title('o/p of BPF6');
- subplot(10,1,8); plot(x8) ; title('o/p of BPF7');
- subplot(10,1,9); plot(x9) ; title('o/p of BPF8');
- subplot(10,1,10); plot(x10) ; title('o/p of HPF');
- 
+ subplot(10,1,1); plot(x1,'r') ; title('(0 - 170 Hz) lpf');
+ subplot(10,1,2); plot(x2,'r') ; title('(170 – 300 Hz) BPF1');
+ subplot(10,1,3); plot(x3,'r') ; title('(300 - 610 Hz) BPF2');
+ subplot(10,1,4); plot(x4,'r') ; title('(610 - 1005 Hz) BPF3');
+ subplot(10,1,5); plot(x5,'r') ; title('(1005 Hz – 3 KHz) BPF4'); 
+ subplot(10,1,6); plot(x6,'r') ; title('(3 - 6 KHz) BPF5');
+ subplot(10,1,7); plot(x7,'r') ; title('(6 - 12 KHz) BPF6');
+ subplot(10,1,8); plot(x8,'r') ; title('(12 - 14 KHz) BPF7');
+ subplot(10,1,9); plot(x9,'r') ; title('(14 - 20 KHz) BPF8');
+ subplot(10,1,10); plot(x10,'r') ; title('(> 20 KHz) HPF');
+ suptitle('IIR Frequency Domain')
+  
 audiowrite('composite_iir.wav',handles.yT,handles.Fs); %save the ouput composite signal  as a .wav file 
  guidata(hObject,handles) 
                         
  
-
